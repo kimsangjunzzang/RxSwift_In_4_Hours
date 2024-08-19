@@ -7,7 +7,6 @@ target 'RxSwift+MVVM' do
 
   # Pods for RxSwift+MVVM
   pod 'RxSwift'
-  pod 'RxCocoa'
-  pod 'RxViewController'
+  pod 'SwiftyJSON'
 
 end
