@@ -14,6 +14,7 @@ let MEMBER_LIST_URL = "https://my.api.mockaroo.com/members_with_avatar.json?key=
 
 
 class ViewController: UIViewController {
+    
     @IBOutlet var timerLabel: UILabel!
     @IBOutlet var editView: UITextView!
     
@@ -33,9 +34,28 @@ class ViewController: UIViewController {
         })
     }
     
-    func downloadJson(_ url: String) -> Observable<String?> {
-        return Observable.from(["Hello", "World"])
-    }
+    func downloadJson(_ url: String) -> Observable<String> {
+           
+           return Observable.create { emitter in
+               let url = URL(string: url)!
+               let task = URLSession.shared.dataTask(with: url) { (data, _, err) in
+                   guard err == nil else {
+                       emitter.onError(err!)
+                       return
+                   }
+                   
+                   if let dat = data, let json = String(data: dat, encoding: .utf8) {
+                       emitter.onNext(json)
+                   }
+                   emitter.onCompleted()
+               }
+               task.resume()
+               
+               return Disposables.create() {
+                   task.cancel()
+               }
+           }
+       }
     
     // MARK: SYNC
     @IBOutlet var activityIndicator: UIActivityIndicatorView!
@@ -43,7 +63,10 @@ class ViewController: UIViewController {
         editView.text = ""
         setVisibleWithAnimation(activityIndicator, true)
         
-        _ = downloadJson(MEMBER_LIST_URL)
+        let jsonObservable = downloadJson(MEMBER_LIST_URL)
+        let helloObservable = Observable.just("Hello World")
+        
+        Observable.zip(jsonObservable, helloObservable){ $1 + "\n" + $0 } // 2 개를 하나의 쌍으로 만든다.
             .observeOn(MainScheduler.instance) // sugar api
             .subscribe(onNext: { json in
                 self.editView.text = json
